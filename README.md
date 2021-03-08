@@ -1,6 +1,6 @@
 # Freqtrade
 
-[![Freqtrade CI](https://github.com/freqtrade/freqtrade/workflows/Freqtrade%20CI/badge.svg)](https://github.com/freqtrade/freqtrade/actions/)
+[![Build Status](https://travis-ci.org/freqtrade/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Documentation](https://readthedocs.org/projects/freqtrade/badge/)](https://www.freqtrade.io)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
@@ -22,21 +22,11 @@ expect.
 We strongly recommend you to have coding and Python knowledge. Do not
 hesitate to read the source code and understand the mechanism of this bot.
 
-## Supported Exchange marketplaces
-
-Please read the [exchange specific notes](docs/exchanges.md) to learn about eventual, special configurations needed for each exchange.
+## Exchange marketplaces supported
 
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#blacklists))
-- [X] [Kraken](https://kraken.com/)
-- [X] [FTX](https://ftx.com)
-- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
-
-### Community tested
-
-Exchanges confirmed working by the community:
-
-- [X] [Bitvavo](https://bitvavo.com/)
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](#a-note-on-binance))
+- [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ## Documentation
 
@@ -46,9 +36,9 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 
 ## Features
 
-- [x] **Based on Python 3.7+**: For botting on any operating system - Windows, macOS and Linux.
+- [x] **Based on Python 3.6+**: For botting on any operating system - Windows, macOS and Linux.
 - [x] **Persistence**: Persistence is achieved through sqlite.
-- [x] **Dry-run**: Run the bot without paying money.
+- [x] **Dry-run**: Run the bot without playing money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
 - [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
 - [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/latest/edge/).
@@ -64,90 +54,98 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
 
 ```bash
-git clone -b develop https://github.com/freqtrade/freqtrade.git 
+sudo apt-get install git
+git clone https://github.com/MontrealTradingGroup/freqtrade.git
 cd freqtrade
+sudo apt-get install make build-essential python3-dev
+git checkout develop
 ./setup.sh --install
+source .env/bin/activate
+python3.6 ./freqtrade/main.py -c config.json
 ```
 
 For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/latest/installation/).
+
 
 ## Basic Usage
 
 ### Bot commands
 
 ```
-usage: freqtrade [-h] [-V]
-                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
-                 ...
+usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+               [--strategy-path PATH] [--customhyperopt NAME]
+               [--dynamic-whitelist [INT]] [--db-url PATH]
+               {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
-    trade               Trade module.
-    create-userdir      Create user-data directory.
-    new-config          Create new config
-    new-hyperopt        Create new hyperopt
-    new-strategy        Create new strategy
-    download-data       Download backtesting data.
-    convert-data        Convert candle (OHLCV) data from one format to
-                        another.
-    convert-trade-data  Convert trade data from one format to another.
-    backtesting         Backtesting module.
-    edge                Edge module.
-    hyperopt            Hyperopt module.
-    hyperopt-list       List Hyperopt results
-    hyperopt-show       Show details of Hyperopt results
-    list-exchanges      Print available exchanges.
-    list-hyperopts      Print available hyperopt classes.
-    list-markets        Print markets on exchange.
-    list-pairs          Print pairs on exchange.
-    list-strategies     Print available strategies.
-    list-timeframes     Print available timeframes for the exchange.
-    show-trades         Show trades.
-    test-pairlist       Test your pairlist configuration.
-    plot-dataframe      Plot candles with indicators.
-    plot-profit         Generate plot showing profits.
+  {backtesting,edge,hyperopt}
+    backtesting         backtesting module
+    edge                edge module
+    hyperopt            hyperopt module
 
 optional arguments:
   -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
-
+  -v, --verbose         verbose mode (-vv for more, -vvv to get all messages)
+  --version             show program\'s version number and exit
+  -c PATH, --config PATH
+                        specify configuration file (default: config.json)
+  -d PATH, --datadir PATH
+                        path to backtest data
+  -s NAME, --strategy NAME
+                        specify strategy class name (default: DefaultStrategy)
+  --strategy-path PATH  specify additional strategy lookup path
+  --customhyperopt NAME
+                        specify hyperopt class name (default:
+                        DefaultHyperOpts)
+  --dynamic-whitelist [INT]
+                        dynamically generate and update whitelist based on 24h
+                        BaseVolume (default: 20) DEPRECATED.
+  --db-url PATH         Override trades database URL, this is useful if
+                        dry_run is enabled or in custom deployments (default:
+                        None)
 ```
 
 ### Telegram RPC commands
 
-Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
+Telegram is not mandatory. However, this is a great way to control your bot. More details on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
 
-- `/start`: Starts the trader.
-- `/stop`: Stops the trader.
-- `/stopbuy`: Stop entering new trades.
-- `/status <trade_id>|[table]`: Lists all or specific open trades.
+- `/start`: Starts the trader
+- `/stop`: Stops the trader
+- `/status [table]`: Lists all open trades
+- `/count`: Displays number of open trades
 - `/profit`: Lists cumulative profit from all finished trades
 - `/forcesell <trade_id>|all`: Instantly sells the given trade (Ignoring `minimum_roi`).
 - `/performance`: Show performance of each finished trade grouped by pair
-- `/balance`: Show account balance per currency.
-- `/daily <n>`: Shows profit or loss per day, over the last n days.
-- `/help`: Show help message.
-- `/version`: Show version.
+- `/balance`: Show account balance per currency
+- `/daily <n>`: Shows profit or loss per day, over the last n days
+- `/help`: Show help message
+- `/version`: Show version
+
 
 ## Development branches
 
 The project is currently setup in two main branches:
 
-- `develop` - This branch has often new features, but might also contain breaking changes. We try hard to keep this branch as stable as possible.
-- `stable` - This branch contains the latest stable release. This branch is generally well tested.
+- `develop` - This branch has often new features, but might also cause breaking changes.
+- `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
+
+
+## A note on Binance
+
+For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
+Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
 
 ## Support
 
-### Help / Discord / Slack
+### Help / Slack
 
-For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
+For any questions not covered by the documentation or for further
+information about the bot, we encourage you to join our slack channel.
 
-Please check out our [discord server](https://discord.gg/MA9v74M).
-
-You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw).
+- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
@@ -175,18 +173,18 @@ Please read our
 [Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests.
 
-Coding is not a necessity to contribute - maybe start with improving our documentation?
+Coding is not a neccessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
-**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/MA9v74M) or [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
+**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
-**Important:** Always create your PR against the `develop` branch, not `stable`.
+**Important:** Always create your PR against the `develop` branch, not `master`.
 
 ## Requirements
 
-### Up-to-date clock
+### Uptodate clock
 
-The clock must be accurate, synchronized to a NTP server very frequently to avoid problems with communication to the exchanges.
+The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 
 ### Min hardware required
 
@@ -196,9 +194,9 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ### Software requirements
 
-- [Python 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
+- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
-- [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
+- [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)

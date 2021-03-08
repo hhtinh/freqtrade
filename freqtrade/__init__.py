@@ -1,34 +1,24 @@
-""" Freqtrade bot """
-__version__ = 'develop'
+""" FreqTrade bot """
+__version__ = '0.17.3'
 
-if __version__ == 'develop':
+class DependencyException(BaseException):
+    """
+    Indicates that a assumed dependency is not met.
+    This could happen when there is currently not enough money on the account.
+    """
 
-    try:
-        import subprocess
 
-        __version__ = 'develop-' + subprocess.check_output(
-            ['git', 'log', '--format="%h"', '-n 1'],
-            stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
+class OperationalException(BaseException):
+    """
+    Requires manual intervention.
+    This happens when an exchange returns an unexpected error during runtime
+    or given configuration is invalid.
+    """
 
-        # from datetime import datetime
-        # last_release = subprocess.check_output(
-        #     ['git', 'tag']
-        # ).decode('utf-8').split()[-1].split(".")
-        # # Releases are in the format "2020.1" - we increment the latest version for dev.
-        # prefix = f"{last_release[0]}.{int(last_release[1]) + 1}"
-        # dev_version = int(datetime.now().timestamp() // 1000)
-        # __version__ = f"{prefix}.dev{dev_version}"
 
-        #  subprocess.check_output(
-        #     ['git', 'log', '--format="%h"', '-n 1'],
-        #     stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
-    except Exception:
-        # git not available, ignore
-        try:
-            # Try Fallback to freqtrade_commit file (created by CI while building docker image)
-            from pathlib import Path
-            versionfile = Path('./freqtrade_commit')
-            if versionfile.is_file():
-                __version__ = f"docker-{versionfile.read_text()[:8]}"
-        except Exception:
-            pass
+class TemporaryError(BaseException):
+    """
+    Temporary network or exchange related error.
+    This could happen when an exchange is congested, unavailable, or the user
+    has networking problems. Usually resolves itself after a time.
+    """

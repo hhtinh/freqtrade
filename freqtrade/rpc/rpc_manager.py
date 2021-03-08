@@ -2,41 +2,32 @@
 This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
 import logging
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 
-from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
-
+from freqtrade.rpc import RPC, RPCMessageType
 
 logger = logging.getLogger(__name__)
 
 
-class RPCManager:
+class RPCManager(object):
     """
     Class to manage RPC objects (Telegram, Slack, ...)
     """
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
-        self.registered_modules: List[RPCHandler] = []
-        self._rpc = RPC(freqtrade)
-        config = freqtrade.config
+        self.registered_modules: List[RPC] = []
+
         # Enable telegram
-        if config.get('telegram', {}).get('enabled', False):
+        if freqtrade.config['telegram'].get('enabled', False):
             logger.info('Enabling rpc.telegram ...')
             from freqtrade.rpc.telegram import Telegram
-            self.registered_modules.append(Telegram(self._rpc, config))
+            self.registered_modules.append(Telegram(freqtrade))
 
         # Enable Webhook
-        if config.get('webhook', {}).get('enabled', False):
+        if freqtrade.config.get('webhook', {}).get('enabled', False):
             logger.info('Enabling rpc.webhook ...')
             from freqtrade.rpc.webhook import Webhook
-            self.registered_modules.append(Webhook(self._rpc, config))
-
-        # Enable local rest api server for cmd line control
-        if config.get('api_server', {}).get('enabled', False):
-            logger.info('Enabling rpc.api_server')
-            from freqtrade.rpc.api_server import ApiServer
-
-            self.registered_modules.append(ApiServer(self._rpc, config))
+            self.registered_modules.append(Webhook(freqtrade))
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
@@ -59,13 +50,10 @@ class RPCManager:
         logger.info('Sending rpc message: %s', msg)
         for mod in self.registered_modules:
             logger.debug('Forwarding message to rpc.%s', mod.name)
-            try:
-                mod.send_msg(msg)
-            except NotImplementedError:
-                logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
+            mod.send_msg(msg)
 
-    def startup_messages(self, config: Dict[str, Any], pairlist, protections) -> None:
-        if config['dry_run']:
+    def startup_messages(self, config, pairlist) -> None:
+        if config.get('dry_run', False):
             self.send_msg({
                 'type': RPCMessageType.WARNING_NOTIFICATION,
                 'status': 'Dry run is enabled. All trades are simulated.'
@@ -73,28 +61,19 @@ class RPCManager:
         stake_currency = config['stake_currency']
         stake_amount = config['stake_amount']
         minimal_roi = config['minimal_roi']
-        stoploss = config['stoploss']
-        trailing_stop = config['trailing_stop']
-        timeframe = config['timeframe']
+        ticker_interval = config['ticker_interval']
         exchange_name = config['exchange']['name']
         strategy_name = config.get('strategy', '')
         self.send_msg({
-            'type': RPCMessageType.STARTUP_NOTIFICATION,
+            'type': RPCMessageType.CUSTOM_NOTIFICATION,
             'status': f'*Exchange:* `{exchange_name}`\n'
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
-                      f'*{"Trailing " if trailing_stop else ""}Stoploss:* `{stoploss}`\n'
-                      f'*Timeframe:* `{timeframe}`\n'
+                      f'*Ticker Interval:* `{ticker_interval}`\n'
                       f'*Strategy:* `{strategy_name}`'
         })
         self.send_msg({
-            'type': RPCMessageType.STARTUP_NOTIFICATION,
+            'type': RPCMessageType.STATUS_NOTIFICATION,
             'status': f'Searching for {stake_currency} pairs to buy and sell '
                       f'based on {pairlist.short_desc()}'
         })
-        if len(protections.name_list) > 0:
-            prots = '\n'.join([p for prot in protections.short_desc() for k, p in prot.items()])
-            self.send_msg({
-                'type': RPCMessageType.STARTUP_NOTIFICATION,
-                'status': f'Using Protections: \n{prots}'
-            })

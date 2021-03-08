@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Dict, List
 
-from pycoingecko import CoinGeckoAPI
+from coinmarketcap import Market
 
 from freqtrade.constants import SUPPORTED_FIAT
 
@@ -15,7 +15,7 @@ from freqtrade.constants import SUPPORTED_FIAT
 logger = logging.getLogger(__name__)
 
 
-class CryptoFiat:
+class CryptoFiat(object):
     """
     Object to describe what is the price of Crypto-currency in a FIAT
     """
@@ -38,8 +38,8 @@ class CryptoFiat:
         # Private attributes
         self._expiration = 0.0
 
-        self.crypto_symbol = crypto_symbol.lower()
-        self.fiat_symbol = fiat_symbol.lower()
+        self.crypto_symbol = crypto_symbol.upper()
+        self.fiat_symbol = fiat_symbol.upper()
         self.set_price(price=price)
 
     def set_price(self, price: float) -> None:
@@ -60,27 +60,24 @@ class CryptoFiat:
         return self._expiration - time.time() <= 0
 
 
-class CryptoToFiatConverter:
+class CryptoToFiatConverter(object):
     """
     Main class to initiate Crypto to FIAT.
     This object contains a list of pair Crypto, FIAT
     This object is also a Singleton
     """
     __instance = None
-    _coingekko: CoinGeckoAPI = None
+    _coinmarketcap: Market = None
 
     _cryptomap: Dict = {}
 
     def __new__(cls):
-        """
-        This class is a singleton - cannot be instantiated twice.
-        """
         if CryptoToFiatConverter.__instance is None:
             CryptoToFiatConverter.__instance = object.__new__(cls)
             try:
-                CryptoToFiatConverter._coingekko = CoinGeckoAPI()
+                CryptoToFiatConverter._coinmarketcap = Market()
             except BaseException:
-                CryptoToFiatConverter._coingekko = None
+                CryptoToFiatConverter._coinmarketcap = None
         return CryptoToFiatConverter.__instance
 
     def __init__(self) -> None:
@@ -89,12 +86,14 @@ class CryptoToFiatConverter:
 
     def _load_cryptomap(self) -> None:
         try:
-            coinlistings = self._coingekko.get_coins_list()
-            # Create mapping table from synbol to coingekko_id
-            self._cryptomap = {x['symbol']: x['id'] for x in coinlistings}
-        except (Exception) as exception:
+            coinlistings = self._coinmarketcap.listings()
+            self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"])),
+                                       coinlistings["data"]))
+        except (BaseException) as exception:
             logger.error(
-                f"Could not load FIAT Cryptocurrency map for the following problem: {exception}")
+                "Could not load FIAT Cryptocurrency map for the following problem: %s",
+                type(exception).__name__
+            )
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:
         """
@@ -105,7 +104,7 @@ class CryptoToFiatConverter:
         :return: float, value in fiat of the crypto-currency amount
         """
         if crypto_symbol == fiat_symbol:
-            return float(crypto_amount)
+            return crypto_amount
         price = self.get_price(crypto_symbol=crypto_symbol, fiat_symbol=fiat_symbol)
         return float(crypto_amount) * float(price)
 
@@ -116,8 +115,8 @@ class CryptoToFiatConverter:
         :param fiat_symbol: FIAT currency you want to convert to (e.g USD)
         :return: Price in FIAT
         """
-        crypto_symbol = crypto_symbol.lower()
-        fiat_symbol = fiat_symbol.lower()
+        crypto_symbol = crypto_symbol.upper()
+        fiat_symbol = fiat_symbol.upper()
 
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
@@ -171,13 +170,15 @@ class CryptoToFiatConverter:
         :return: bool, True supported, False not supported
         """
 
-        return fiat.upper() in SUPPORTED_FIAT
+        fiat = fiat.upper()
+
+        return fiat in SUPPORTED_FIAT
 
     def _find_price(self, crypto_symbol: str, fiat_symbol: str) -> float:
         """
-        Call CoinGekko API to retrieve the price in the FIAT
-        :param crypto_symbol: Crypto-currency you want to convert (e.g btc)
-        :param fiat_symbol: FIAT currency you want to convert to (e.g usd)
+        Call CoinMarketCap API to retrieve the price in the FIAT
+        :param crypto_symbol: Crypto-currency you want to convert (e.g BTC)
+        :param fiat_symbol: FIAT currency you want to convert to (e.g USD)
         :return: float, price of the crypto-currency in Fiat
         """
         # Check if the fiat convertion you want is supported
@@ -194,13 +195,12 @@ class CryptoToFiatConverter:
             return 0.0
 
         try:
-            _gekko_id = self._cryptomap[crypto_symbol]
             return float(
-                self._coingekko.get_price(
-                    ids=_gekko_id,
-                    vs_currencies=fiat_symbol
-                )[_gekko_id][fiat_symbol]
+                self._coinmarketcap.ticker(
+                    currency=self._cryptomap[crypto_symbol],
+                    convert=fiat_symbol
+                )['data']['quotes'][fiat_symbol.upper()]['price']
             )
-        except Exception as exception:
+        except BaseException as exception:
             logger.error("Error in _find_price: %s", exception)
             return 0.0

@@ -1,17 +1,8 @@
-if [ -z "$1" ]; then
-  INSTALL_LOC=/usr/local
+if [ ! -f "/tmp/ta-lib/CHANGELOG.TXT" ]; then
+  echo "Install TA-lib"
+  tar zxvf /tmp/ta-lib-0.4.0-src.tar.gz
+  cd /tmp/ta-lib && sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h && ./configure && make && sudo make install && cd /freqtrade
 else
-  INSTALL_LOC=${1}
-fi
-echo "Installing to ${INSTALL_LOC}"
-if [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
-  tar zxvf ta-lib-0.4.0-src.tar.gz
-  cd ta-lib \
-  && sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h \
-  && ./configure --prefix=${INSTALL_LOC}/ \
-  && make \
-  && which sudo && sudo make install || make install \
-  && cd ..
-else
-  echo "TA-lib already installed, skipping installation"
+  echo "TA-lib already installed, skipping download and build."
+  cd ta-lib && sudo make install && cd ..
 fi

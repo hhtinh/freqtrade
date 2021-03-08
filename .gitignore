@@ -1,14 +1,14 @@
 # Freqtrade rules
+freqtrade/tests/testdata/*.json
+hyperopt_conf.py
 config*.json
 *.sqlite
+.hyperopt
 logfile.txt
-user_data/*
-!user_data/strategy/sample_strategy.py
-!user_data/notebooks
-user_data/notebooks/*
+hyperopt_trials.pickle
+user_data/
 freqtrade-plot.html
 freqtrade-profit-plot.html
-freqtrade/rpc/api_server/ui/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -80,7 +80,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-*.ipynb_checkpoints
+.ipynb_checkpoints
 
 # pyenv
 .python-version
@@ -92,6 +92,3 @@ target/
 
 .pytest_cache/
 .mypy_cache/
-
-#exceptions
-!*.gitkeep

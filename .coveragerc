@@ -1,7 +1,6 @@
 [run]
 omit =
     scripts/*
-    freqtrade/templates/*
+    freqtrade/tests/*
     freqtrade/vendor/*
     freqtrade/__main__.py
-    tests/*

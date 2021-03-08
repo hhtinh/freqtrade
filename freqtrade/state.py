@@ -3,37 +3,13 @@
 """
 Bot state constant
 """
-from enum import Enum
+import enum
 
 
-class State(Enum):
+class State(enum.Enum):
     """
     Bot application states
     """
-    RUNNING = 1
-    STOPPED = 2
-    RELOAD_CONFIG = 3
-
-    def __str__(self):
-        return f"{self.name.lower()}"
-
-
-class RunMode(Enum):
-    """
-    Bot running mode (backtest, hyperopt, ...)
-    can be "live", "dry-run", "backtest", "edge", "hyperopt".
-    """
-    LIVE = "live"
-    DRY_RUN = "dry_run"
-    BACKTEST = "backtest"
-    EDGE = "edge"
-    HYPEROPT = "hyperopt"
-    UTIL_EXCHANGE = "util_exchange"
-    UTIL_NO_EXCHANGE = "util_no_exchange"
-    PLOT = "plot"
-    OTHER = "other"
-
-
-TRADING_MODES = [RunMode.LIVE, RunMode.DRY_RUN]
-OPTIMIZE_MODES = [RunMode.BACKTEST, RunMode.EDGE, RunMode.HYPEROPT]
-NON_UTIL_MODES = TRADING_MODES + OPTIMIZE_MODES
+    RUNNING = 0
+    STOPPED = 1
+    RELOAD_CONF = 2

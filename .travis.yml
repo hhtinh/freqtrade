@@ -1,56 +1,53 @@
+sudo: true
 os:
 - linux
-dist: bionic
+dist: xenial
 language: python
 python:
-- 3.8
+- 3.6
 services:
   - docker
 env:
   global:
     - IMAGE_NAME=freqtradeorg/freqtrade
+addons:
+  apt:
+    packages:
+    - libelf-dev
+    - libdw-dev
+    - binutils-dev
 install:
-- cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies; cd ..
-- export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
-- export TA_LIBRARY_PATH=${HOME}/dependencies/lib
-- export TA_INCLUDE_PATH=${HOME}/dependencies/include
+- cd build_helpers && ./install_ta-lib.sh; cd ..
+- export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+- pip install --upgrade flake8 coveralls pytest-random-order pytest-asyncio mypy
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
-
   include:
     - stage: tests
       script:
-      - pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-      # Allow failure for coveralls
-      # - coveralls || true
+      - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+      - coveralls
       name: pytest
     - script:
-      - cp config_bittrex.json.example config.json
-      - freqtrade create-userdir --userdir user_data
-      - freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+      - cp config.json.example config.json
+      - python freqtrade/main.py --datadir freqtrade/tests/testdata backtesting
       name: backtest
     - script:
-      - cp config_bittrex.json.example config.json
-      - freqtrade create-userdir --userdir user_data
-      - freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily
+      - cp config.json.example config.json
+      - python freqtrade/main.py --datadir freqtrade/tests/testdata hyperopt -e 5
       name: hyperopt
-    - script: flake8
+    - script: flake8 freqtrade
       name: flake8
-    - script:
-      # Test Documentation boxes -
-      # !!! <TYPE>: is not allowed!
-      # !!! <TYPE> "title" - Title needs to be quoted!
-      - grep -Er '^!{3}\s\S+:|^!{3}\s\S+\s[^"]' docs/*; test $? -ne 0
-      name: doc syntax
-    - script: mypy freqtrade scripts
+    - script: mypy freqtrade
       name: mypy
 
-    # - stage: docker
-    #   if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
-    #   script:
-    #     - build_helpers/publish_docker.sh
-    #   name: "Build and test and push docker image"
+    - stage: docker
+      if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
+      script:
+        - build_helpers/publish_docker.sh
+      name: "Build and test and push docker image"
+
 
 notifications:
   slack:
@@ -58,4 +55,4 @@ notifications:
 cache:
   pip: True
   directories:
-    - $HOME/dependencies
+    - /usr/local/lib
